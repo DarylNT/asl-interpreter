@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ASL Letters — Webcam + Local Python</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header>
+    <h1>ASL Fingerspelling</h1>
+    <p class="sub">Webcam → localhost Python (mptest.py) → prediction</p>
+</header>
+
+<main>
+    <div class="card">
+        <div class="stage">
+            <video id="video" playsinline autoplay muted></video>
+            <canvas id="overlay"></canvas>
+            <div class="label" id="label">—</div>
+        </div>
+
+        <div class="bar">
+            <button id="startBtn">Turn Camera On</button>
+            <button id="stopBtn" disabled>Turn Camera Off</button>
+        </div>
+        <div id="status" class="status">Idle</div>
+    </div>
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>
