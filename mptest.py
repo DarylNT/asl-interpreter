@@ -38,7 +38,7 @@ letter_classes = [chr(65 + i) for i in range(26)]
 cap = cv2.VideoCapture(0)
 with mp_hands.Hands(
     static_image_mode=False,
-    max_num_hands=1,
+    max_num_hands=2,
     min_detection_confidence=0.5,
     min_tracking_confidence=0.5) as hands:
   while cap.isOpened():
@@ -65,6 +65,16 @@ with mp_hands.Hands(
             mp_hands.HAND_CONNECTIONS,
             mp_drawing_styles.get_default_hand_landmarks_style(),
             mp_drawing_styles.get_default_hand_connections_style())
+        # draw a rectangle around the hand (bounding box from 2D landmarks)
+        h, w = image.shape[:2]
+        xs = [lm.x * w for lm in hand_landmarks.landmark]
+        ys = [lm.y * h for lm in hand_landmarks.landmark]
+        pad = 10
+        x_min = max(0, int(min(xs)) - pad)
+        y_min = max(0, int(min(ys)) - pad)
+        x_max = min(w - 1, int(max(xs)) + pad)
+        y_max = min(h - 1, int(max(ys)) + pad)
+        cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (0, 255, 255), 2)
         
         # world landmarks for it to be actually useful
         if results.multi_hand_world_landmarks:
