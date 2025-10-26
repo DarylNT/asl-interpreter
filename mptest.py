@@ -54,10 +54,14 @@ with mp_hands.Hands(
     image.flags.writeable = True
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     
-    predicted_letter = ""
-    confidence = 0.0
+    h, w = image.shape[:2]
+    left_hand_pred = None
+    right_hand_pred = None
+    left_hand_conf = 0.0
+    right_hand_conf = 0.0
+    
     # normal landmarks to draw on hand
-    if results.multi_hand_landmarks:
+    if results.multi_hand_landmarks and results.multi_handedness:
       for hand_idx, hand_landmarks in enumerate(results.multi_hand_landmarks):
         mp_drawing.draw_landmarks(
             image,
@@ -66,7 +70,6 @@ with mp_hands.Hands(
             mp_drawing_styles.get_default_hand_landmarks_style(),
             mp_drawing_styles.get_default_hand_connections_style())
         # draw a rectangle around the hand (bounding box from 2D landmarks)
-        h, w = image.shape[:2]
         xs = [lm.x * w for lm in hand_landmarks.landmark]
         ys = [lm.y * h for lm in hand_landmarks.landmark]
         pad = 10
@@ -75,6 +78,10 @@ with mp_hands.Hands(
         x_max = min(w - 1, int(max(xs)) + pad)
         y_max = min(h - 1, int(max(ys)) + pad)
         cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (0, 255, 255), 2)
+        
+        # which hand is it :O
+        handedness = results.multi_handedness[hand_idx]
+        hand_label = handedness.classification[0].label  # left or right
         
         # world landmarks for it to be actually useful
         if results.multi_hand_world_landmarks:
@@ -90,15 +97,30 @@ with mp_hands.Hands(
               confidence, pred_idx = probabilities.max(dim=1)
               confidence = confidence.item() * 100
               predicted_letter = letter_classes[pred_idx.item()]
+              
+              # store prediction based on which hand it is
+              if hand_label == "Left":
+                left_hand_pred = predicted_letter
+                left_hand_conf = confidence
+              else:
+                right_hand_pred = predicted_letter
+                right_hand_conf = confidence
     
     # make it easier to see urself
     image = cv2.flip(image, 1)
     
-    # show prediced letter
-    if predicted_letter:
-      cv2.putText(image, f"Letter: {predicted_letter}", (10, 50), 
+    # show predicted letters
+    # im just gonna flip them without changing the stuff up there bc its getting them reversed
+    if right_hand_pred:
+      cv2.putText(image, f"Left: {right_hand_pred}", (10, 50), 
                   cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 3)
-      cv2.putText(image, f"Confidence: {confidence:.1f}%", (10, 100), 
+      cv2.putText(image, f"{right_hand_conf:.1f}%", (10, 100), 
+                  cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    
+    if left_hand_pred:
+      cv2.putText(image, f"Right: {left_hand_pred}", (w - 260, 50), 
+                  cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 3)
+      cv2.putText(image, f"{left_hand_conf:.1f}%", (w - 260, 100), 
                   cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     
     cv2.imshow('ASL Recognition', image)
