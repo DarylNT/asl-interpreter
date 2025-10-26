@@ -1,0 +1,98 @@
+{
+  "25": {
+    "class_name": "Z",
+    "count": 9,
+    "mean_loss": 2.3229426542917886,
+    "variance_loss": 0.046016544663430636
+  },
+  "1": {
+    "class_name": "B",
+    "count": 2,
+    "mean_loss": 3.3147724866867065,
+    "variance_loss": 0.00406782170583142
+  },
+  "10": {
+    "class_name": "K",
+    "count": 3,
+    "mean_loss": 3.140608469645182,
+    "variance_loss": 0.0159996910392882
+  },
+  "23": {
+    "class_name": "X",
+    "count": 3,
+    "mean_loss": 3.3363330364227295,
+    "variance_loss": 0.034351015870186075
+  },
+  "0": {
+    "class_name": "A",
+    "count": 7,
+    "mean_loss": 3.0460314750671387,
+    "variance_loss": 0.010414071875914041
+  },
+  "9": {
+    "class_name": "J",
+    "count": 2,
+    "mean_loss": 2.807652473449707,
+    "variance_loss": 0.007156279190098758
+  },
+  "6": {
+    "class_name": "G",
+    "count": 1,
+    "mean_loss": 3.447814464569092,
+    "variance_loss": 0.0
+  },
+  "11": {
+    "class_name": "L",
+    "count": 2,
+    "mean_loss": 3.2774391174316406,
+    "variance_loss": 0.0001158484888037492
+  },
+  "13": {
+    "class_name": "N",
+    "count": 2,
+    "mean_loss": 2.9051525592803955,
+    "variance_loss": 0.0003990912774725075
+  },
+  "24": {
+    "class_name": "Y",
+    "count": 1,
+    "mean_loss": 3.3480019569396973,
+    "variance_loss": 0.0
+  },
+  "14": {
+    "class_name": "O",
+    "count": 1,
+    "mean_loss": 3.2324717044830322,
+    "variance_loss": 0.0
+  },
+  "12": {
+    "class_name": "M",
+    "count": 1,
+    "mean_loss": 3.2943389415740967,
+    "variance_loss": 0.0
+  },
+  "19": {
+    "class_name": "T",
+    "count": 1,
+    "mean_loss": 3.6219558715820312,
+    "variance_loss": 0.0
+  },
+  "17": {
+    "class_name": "R",
+    "count": 1,
+    "mean_loss": 3.6293399333953857,
+    "variance_loss": 0.0
+  },
+  "22": {
+    "class_name": "W",
+    "count": 1,
+    "mean_loss": 3.59729266166687,
+    "variance_loss": 0.0
+  },
+  "8": {
+    "class_name": "I",
+    "count": 1,
+    "mean_loss": 3.625439167022705,
+    "variance_loss": 0.0
+  }
+}

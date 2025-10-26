@@ -1,0 +1,98 @@
+{
+  "0": {
+    "class_name": "A",
+    "count": 7,
+    "mean_loss": 1.6577672277178082,
+    "variance_loss": 0.18740781503724627
+  },
+  "25": {
+    "class_name": "Z",
+    "count": 9,
+    "mean_loss": 1.4288896454705131,
+    "variance_loss": 0.03665401590311906
+  },
+  "1": {
+    "class_name": "B",
+    "count": 2,
+    "mean_loss": 3.283059000968933,
+    "variance_loss": 0.0452206974480589
+  },
+  "23": {
+    "class_name": "X",
+    "count": 3,
+    "mean_loss": 2.8726367155710855,
+    "variance_loss": 0.0689215632077283
+  },
+  "12": {
+    "class_name": "M",
+    "count": 1,
+    "mean_loss": 4.3804121017456055,
+    "variance_loss": 0.0
+  },
+  "11": {
+    "class_name": "L",
+    "count": 2,
+    "mean_loss": 3.510788083076477,
+    "variance_loss": 0.1753959107793719
+  },
+  "13": {
+    "class_name": "N",
+    "count": 2,
+    "mean_loss": 3.4984209537506104,
+    "variance_loss": 0.3665585956742916
+  },
+  "14": {
+    "class_name": "O",
+    "count": 1,
+    "mean_loss": 3.9004030227661133,
+    "variance_loss": 0.0
+  },
+  "19": {
+    "class_name": "T",
+    "count": 1,
+    "mean_loss": 3.931596279144287,
+    "variance_loss": 0.0
+  },
+  "22": {
+    "class_name": "W",
+    "count": 1,
+    "mean_loss": 3.8006644248962402,
+    "variance_loss": 0.0
+  },
+  "6": {
+    "class_name": "G",
+    "count": 1,
+    "mean_loss": 3.9719161987304688,
+    "variance_loss": 0.0
+  },
+  "9": {
+    "class_name": "J",
+    "count": 2,
+    "mean_loss": 3.397807002067566,
+    "variance_loss": 0.07413709839809712
+  },
+  "10": {
+    "class_name": "K",
+    "count": 3,
+    "mean_loss": 2.799614906311035,
+    "variance_loss": 0.11066261100199881
+  },
+  "24": {
+    "class_name": "Y",
+    "count": 1,
+    "mean_loss": 3.6985867023468018,
+    "variance_loss": 0.0
+  },
+  "17": {
+    "class_name": "R",
+    "count": 1,
+    "mean_loss": 3.967498779296875,
+    "variance_loss": 0.0
+  },
+  "8": {
+    "class_name": "I",
+    "count": 1,
+    "mean_loss": 3.88352108001709,
+    "variance_loss": 0.0
+  }
+}
