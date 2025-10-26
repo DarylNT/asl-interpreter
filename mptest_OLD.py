@@ -5,28 +5,10 @@ import torch.nn as nn
 import mediapipe as mp
 import os
 import threading
-import time
-from dotenv import load_dotenv
-from elevenlabs.client import ElevenLabs
-from elevenlabs.play import play
 
-# get api key
-load_dotenv()
-client = ElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY"))
-
-# basic drawing stuffs
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_hands = mp.solutions.hands
-
-# speaking trackers
-last_left_spoken = None
-last_right_spoken = None
-last_spoken_time = 0.0
-left_hold_letter = None
-left_hold_start = 0.0
-right_hold_letter = None
-right_hold_start = 0.0
 
 
 class CNN(nn.Module):
@@ -54,22 +36,43 @@ model.eval()
 # a-z
 letter_classes = [chr(65 + i) for i in range(26)]
 
-# speak on threads bc it was freezing cam before
-speak_thread = None
-def speak(text: str):
-  global speak_thread
+# ElevenLabs TTS (optional). Set ELEVENLABS_API_KEY in your environment to enable.
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
+ELEVENLABS_VOICE = os.getenv("ELEVENLABS_VOICE", "Rachel")
+ELEVENLABS_MODEL = os.getenv("ELEVENLABS_MODEL", "eleven_multilingual_v2")
+
+_elevenlabs_ready = False
+try:
+  if ELEVENLABS_API_KEY:
+    # Prefer new SDK if available, else fallback to legacy API
+    try:
+      from elevenlabs import generate, play, set_api_key
+      set_api_key(ELEVENLABS_API_KEY)
+      _elevenlabs_ready = True
+    except Exception:
+      _elevenlabs_ready = False
+  else:
+    _elevenlabs_ready = False
+except Exception:
+  _elevenlabs_ready = False
+
+def _speak_elevenlabs(text: str):
+  if not _elevenlabs_ready:
+    return
+  try:
+    audio = generate(text=text, voice=ELEVENLABS_VOICE, model=ELEVENLABS_MODEL)
+    play(audio, notebook=False, use_ffmpeg=False)
+  except Exception as e:
+    # Non-fatal: just ignore speaking errors during live demo
+    pass
+
+def speak_async(text: str):
   if not text:
     return
-  if speak_thread is not None and speak_thread.is_alive():
+  if not _elevenlabs_ready:
     return
-  def _run():
-    try:
-      audio = client.text_to_speech.convert(text=text, voice_id="JBFqnCBsd6RMkjVDRZzb", model_id="eleven_multilingual_v2", output_format="mp3_44100_128")
-      play(audio, notebook=False, use_ffmpeg=False)
-    except Exception as e:
-        print(f"[TTS ERROR] ElevenLabs failed: {e}")
-  speak_thread = threading.Thread(target=_run, daemon=True)
-  speak_thread.start()
+  t = threading.Thread(target=_speak_elevenlabs, args=(text,), daemon=True)
+  t.start()
 
 
 cap = cv2.VideoCapture(0)
@@ -84,20 +87,23 @@ with mp_hands.Hands(
       print("Ignoring empty camera frame.")
       continue
 
-    # make image ez to process
     image.flags.writeable = False
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = hands.process(image)
+
     image.flags.writeable = True
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-
+    
     h, w = image.shape[:2]
-
-    # vars for predictions and confidence
     left_hand_pred = None
     right_hand_pred = None
     left_hand_conf = 0.0
     right_hand_conf = 0.0
+    # Track last spoken letters per hand
+    if 'last_left_spoken' not in globals():
+      globals()['last_left_spoken'] = None
+    if 'last_right_spoken' not in globals():
+      globals()['last_right_spoken'] = None
     
     # normal landmarks to draw on hand
     if results.multi_hand_landmarks and results.multi_handedness:
@@ -108,8 +114,7 @@ with mp_hands.Hands(
             mp_hands.HAND_CONNECTIONS,
             mp_drawing_styles.get_default_hand_landmarks_style(),
             mp_drawing_styles.get_default_hand_connections_style())
-        
-        # draw a box around the hand
+        # draw a rectangle around the hand (bounding box from 2D landmarks)
         xs = [lm.x * w for lm in hand_landmarks.landmark]
         ys = [lm.y * h for lm in hand_landmarks.landmark]
         pad = 10
@@ -119,60 +124,41 @@ with mp_hands.Hands(
         y_max = min(h - 1, int(max(ys)) + pad)
         cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (0, 255, 255), 2)
         
-        # which hand is it 😮
+        # which hand is it :O
         handedness = results.multi_handedness[hand_idx]
         hand_label = handedness.classification[0].label  # left or right
-
-        # world landmarks for prediction
+        
+        # world landmarks for it to be actually useful
         if results.multi_hand_world_landmarks:
           hand_world_landmarks = results.multi_hand_world_landmarks[hand_idx]
           landmarks = np.array([[lm.x, lm.y, lm.z] for lm in hand_world_landmarks.landmark], dtype=np.float32)
           landmarks = (landmarks - landmarks.mean(axis=0)) / (landmarks.std(axis=0) + 1e-8)
+          
+          # convert stuff on screen to tensor and predict letter
           x = torch.from_numpy(landmarks).float().T.unsqueeze(0).to(DEVICE)  # (1, 3, 21)
           with torch.no_grad():
-            output = model(x)
-            probabilities = torch.softmax(output, dim=1)
-            confidence, pred_idx = probabilities.max(dim=1)
-            confidence = confidence.item() * 100
-            predicted_letter = letter_classes[pred_idx.item()]
-          if hand_label == "Left":
-            left_hand_pred = predicted_letter
-            left_hand_conf = confidence
-          else:
-            right_hand_pred = predicted_letter
-            right_hand_conf = confidence
+              output = model(x)
+              probabilities = torch.softmax(output, dim=1)
+              confidence, pred_idx = probabilities.max(dim=1)
+              confidence = confidence.item() * 100
+              predicted_letter = letter_classes[pred_idx.item()]
+              
+              # store prediction based on which hand it is
+              if hand_label == "Left":
+                left_hand_pred = predicted_letter
+                left_hand_conf = confidence
+              else:
+                right_hand_pred = predicted_letter
+                right_hand_conf = confidence
 
-    # speak only if pose is held for at least 0.15s
-    CONF_THRESHOLD = 49.0
-    HOLD_SEC = 0.15
-
-    # left hand speak
-    now = time.monotonic()
-    if left_hand_pred and left_hand_conf >= CONF_THRESHOLD:
-      if left_hold_letter == left_hand_pred:
-        if (now - left_hold_start) >= HOLD_SEC and left_hand_pred != last_left_spoken:
-          speak(left_hand_pred)
-          last_left_spoken = left_hand_pred
-      else:
-        left_hold_letter = left_hand_pred
-        left_hold_start = now
-    else:
-      left_hold_letter = None
-      left_hold_start = 0.0
-
-    # right hand speak
-    now = time.monotonic()
-    if right_hand_pred and right_hand_conf >= CONF_THRESHOLD:
-      if right_hold_letter == right_hand_pred:
-        if (now - right_hold_start) >= HOLD_SEC and right_hand_pred != last_right_spoken:
-          speak(right_hand_pred)
-          last_right_spoken = right_hand_pred
-      else:
-        right_hold_letter = right_hand_pred
-        right_hold_start = now
-    else:
-      right_hold_letter = None
-      right_hold_start = 0.0
+    # Speak on new sign changes (per hand) when confident enough
+    CONF_THRESHOLD = 60.0
+    if left_hand_pred and left_hand_conf >= CONF_THRESHOLD and left_hand_pred != globals().get('last_left_spoken'):
+        speak_async(left_hand_pred)
+        globals()['last_left_spoken'] = left_hand_pred
+    if right_hand_pred and right_hand_conf >= CONF_THRESHOLD and right_hand_pred != globals().get('last_right_spoken'):
+        speak_async(right_hand_pred)
+        globals()['last_right_spoken'] = right_hand_pred
     
     # make it easier to see urself
     image = cv2.flip(image, 1)
@@ -191,7 +177,7 @@ with mp_hands.Hands(
       cv2.putText(image, f"{left_hand_conf:.1f}%", (w - 260, 100), 
                   cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     
-    cv2.imshow('ASL Interpreter', image)
+    cv2.imshow('ASL Recognition', image)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 cap.release()
