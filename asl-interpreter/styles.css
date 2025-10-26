@@ -1,0 +1,104 @@
+:root {
+    --bg: #0f1115;
+    --panel: #151820;
+    --text: #e8eef8;
+    --muted: #9aa6b2;
+    --accent: #6aa2ff;
+    --ok: #5bdc8b;
+    --error: #dc5b5b;
+}
+
+* { box-sizing: border-box }
+html, body { height: 100% }
+
+body {
+    margin: 0;
+    background: radial-gradient(1200px 800px at 20% 10%, #121624, #0b0d12 60%);
+    color: var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+}
+
+header {
+    text-align: center;
+    padding: 24px 16px 8px;
+}
+
+h1 { margin: 0 0 4px; letter-spacing: .3px }
+.sub { margin: 0; color: var(--muted); font-size: 14px }
+
+main { max-width: 1000px; margin: 16px auto 48px; padding: 0 16px }
+
+.card {
+    background: linear-gradient(180deg, #171c29, #0f1420);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+}
+
+.stage {
+    position: relative;
+    aspect-ratio: 16/9;
+    max-width: 960px;
+    width: 100%;
+    margin: 0 auto;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #000;
+}
+
+video, canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.prediction-info {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 10;
+    color: var(--text);
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.prediction-info .letter {
+    font-size: 72px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.prediction-info .confidence {
+    font-size: 18px;
+    color: var(--accent);
+    margin-bottom: 4px;
+}
+
+.prediction-info .mode {
+    font-size: 14px;
+    color: var(--ok);
+}
+
+.controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    margin: 16px 0;
+}
+
+button {
+    background: linear-gradient(180deg, #1e2435, #141a27);
+    color: var(--text);
+    border: 1px solid rgba(255,255,255,.14);
+    padding:10px 14px;border-radius:10px;
+    font-weight:600;cursor:pointer
+}
+button:disabled{opacity:.5;cursor:not-allowed}
+.status{color:var(--muted);font-size:14px;min-height:20px;text-align:center}
+.status.ok{color:var(--ok)} .status.err{color:#ff7b7b}
+.label{position:absolute;left:12px;bottom:12px;background:rgba(20,24,32,.7);
+    border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(6px);
+    padding:8px 12px;border-radius:12px;font-size:18px}

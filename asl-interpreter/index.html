@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Enhanced ASL Interpreter</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Enhanced ASL Interpreter</h1>
+        <p class="sub">Real-time ASL Recognition with Temporal Enhancement</p>
+    </header>
+
+    <main>
+        <div class="card">
+            <div class="stage">
+                <video id="video" playsinline autoplay muted></video>
+                <canvas id="output_canvas"></canvas>
+                <div class="prediction-info">
+                    <div class="letter" id="predicted_letter">-</div>
+                    <div class="confidence" id="confidence">Confidence: 0%</div>
+                    <div class="mode" id="prediction_mode">Standard Mode</div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="startBtn">Turn Camera On</button>
+                <button id="stopBtn" disabled>Turn Camera Off</button>
+                <div id="status" class="status">Idle</div>
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>

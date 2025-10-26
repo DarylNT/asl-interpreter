@@ -116,22 +116,35 @@ class TemporalASLPredictor:
             self.landmarks_buffer.pop(0)
             self.probabilities_buffer.pop(0)
         
-        # Use RNN when buffer is full
-        if len(self.landmarks_buffer) == self.sequence_length:
+        # Use RNN when buffer is full (only if RNN model is trained)
+        # For now, just use CNN with temporal averaging for better stability
+        if len(self.landmarks_buffer) == self.sequence_length and self.rnn_model is not None:
             # Stack sequences
             landmarks_seq = torch.stack(self.landmarks_buffer).unsqueeze(0)  # (1, seq_len, 3, 21)
             probs_seq = torch.stack(self.probabilities_buffer).unsqueeze(0)   # (1, seq_len, 26)
             
-            with torch.no_grad():
-                rnn_output = self.rnn_model(landmarks_seq, probs_seq)
-                rnn_probs = torch.softmax(rnn_output, dim=1)
-                
-                # Get enhanced prediction
-                enhanced_confidence, pred_idx = rnn_probs.max(dim=1)
-                enhanced_confidence = enhanced_confidence.item() * 100
-                predicted_letter = letter_classes[pred_idx.item()]
-                
-                return predicted_letter, enhanced_confidence
+            try:
+                with torch.no_grad():
+                    rnn_output = self.rnn_model(landmarks_seq, probs_seq)
+                    rnn_probs = torch.softmax(rnn_output, dim=1)
+                    
+                    # Get enhanced prediction
+                    enhanced_confidence, pred_idx = rnn_probs.max(dim=1)
+                    enhanced_confidence = enhanced_confidence.item() * 100
+                    predicted_letter = letter_classes[pred_idx.item()]
+                    
+                    return predicted_letter, enhanced_confidence
+            except:
+                # Fall back to temporal averaging if RNN fails
+                pass
+        
+        # Use temporal averaging for stability when buffer is full
+        if len(self.probabilities_buffer) == self.sequence_length:
+            avg_probs = torch.stack(self.probabilities_buffer).mean(dim=0)
+            confidence, pred_idx = avg_probs.max(dim=0)
+            confidence = confidence.item() * 100
+            predicted_letter = letter_classes[pred_idx.item()]
+            return predicted_letter, confidence
         
         # Return CNN prediction for first few frames
         confidence, pred_idx = cnn_probs.max(dim=1)
@@ -140,9 +153,13 @@ class TemporalASLPredictor:
         return predicted_letter, confidence
 
 
-# Initialize RNN model (you'll need to train this)
-rnn_model = EnhancedCNNRNN(model).to(DEVICE)
-rnn_model.eval()
+# Initialize RNN model as None (not trained yet - would need to train this separately)
+# Set it to None to use temporal averaging instead of RNN
+rnn_model = None
+# If you have a trained RNN model, uncomment the lines below:
+# rnn_model = EnhancedCNNRNN(model).to(DEVICE)
+# rnn_model.load_state_dict(torch.load("rnn_model.pt", map_location=DEVICE))
+# rnn_model.eval()
 
 # Initialize temporal predictor
 temporal_predictor = TemporalASLPredictor(model, rnn_model, sequence_length=10)
