@@ -29,9 +29,7 @@ try:
 except:
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# MediaPipe hands
-mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(static_image_mode=True, max_num_hands=2, min_detection_confidence=0.5)
+# MediaPipe Hands will be created lazily inside the dataset workers only if needed
 
 
 class RoboFlowDataset(Dataset):
@@ -41,6 +39,7 @@ class RoboFlowDataset(Dataset):
         self.classes = [chr(65 + i) for i in range(26)]  # a-z
         self.class_to_idx = {c: i for i, c in enumerate(self.classes)}
         self.samples = []  # (image_path, label_idx)
+        self.hands = None  # lazy init to avoid creating TFLite interpreter in every worker unnecessarily
         
         # load csv files to map letters to imgs
         with open(csv_path, 'r') as f:
@@ -69,13 +68,17 @@ class RoboFlowDataset(Dataset):
         if os.path.exists(cache_file):
             lm = np.load(cache_file)
         else:
-            # get andmarks from img
+            # get landmarks from img (only when cache is missing)
             image = cv2.imread(img_path)
             if image is None:
                 return None
             
             rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            results = hands.process(rgb)
+            # create mediapipe hands on first use in this worker
+            if self.hands is None:
+                mp_hands = mp.solutions.hands
+                self.hands = mp_hands.Hands(static_image_mode=True, max_num_hands=2, min_detection_confidence=0.5)
+            results = self.hands.process(rgb)
             
             if not results.multi_hand_world_landmarks:
                 return None
@@ -184,8 +187,15 @@ def main():
     val_ds = RoboFlowDataset(VAL_DIR, VAL_CSV)
     
     # parallel processing
-    train_loader = DataLoader(train_ds, batch_size=16, shuffle=True, num_workers=2, pin_memory=True, collate_fn=collate_skip_none)
-    val_loader = DataLoader(val_ds, batch_size=32, num_workers=2, pin_memory=True, collate_fn=collate_skip_none)
+    # Keep workers alive across epochs so heavy initializations (like MediaPipe/TFLite) don't repeat each epoch
+    train_loader = DataLoader(
+        train_ds, batch_size=16, shuffle=True, num_workers=16, pin_memory=True,
+        collate_fn=collate_skip_none, persistent_workers=True
+    )
+    val_loader = DataLoader(
+        val_ds, batch_size=32, num_workers=16, pin_memory=True,
+        collate_fn=collate_skip_none, persistent_workers=True
+    )
 
     model = CNN(26).to(DEVICE)  # a-z
     opt = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
@@ -193,7 +203,7 @@ def main():
     crit = nn.CrossEntropyLoss()
 
     best_acc = 0.0
-    for epoch in range(20): # more epochs means more training
+    for epoch in range(100): # more epochs means more training
         loss, class_stats = train_epoch(model, train_loader, opt, crit)
         val_acc = evaluate(model, val_loader)
         print(f"Epoch {epoch+1}: loss={loss:.4f}, val_acc={val_acc:.2f}%")
